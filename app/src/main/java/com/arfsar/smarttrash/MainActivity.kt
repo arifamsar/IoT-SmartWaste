@@ -1,9 +1,15 @@
 package com.arfsar.smarttrash
 
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.Spring
@@ -37,12 +43,23 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.arfsar.smarttrash.ui.theme.SmartTrashTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class MainActivity : ComponentActivity() {
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            startBinCapacityService()
+        } else {
+            Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     private val sensorViewModel by viewModel<SensorViewModel>()
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,6 +88,28 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            when {
+                ContextCompat.checkSelfPermission(
+                    this,
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED -> {
+                    startBinCapacityService()
+                }
+                else -> {
+                    requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+        } else {
+            startBinCapacityService()
+        }
+    }
+
+    private fun startBinCapacityService() {
+        Log.d("MainActivity", "Starting BinCapacityService")
+        val intent = Intent(this, BinCapacityService::class.java)
+        startService(intent)
     }
 }
 
@@ -170,40 +209,6 @@ fun TrashBin(capacityPercentage: Float) {
 }
 
 @Composable
-fun FloatingTrashAnimation() {
-    val trashOffsets = listOf(
-        remember { Animatable(0f) },
-        remember { Animatable(0f) },
-        remember { Animatable(0f) }
-    )
-
-    LaunchedEffect(Unit) {
-        trashOffsets.forEach { offset ->
-            offset.animateTo(
-                targetValue = -100f,
-                animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)
-            )
-            offset.snapTo(0f)
-        }
-    }
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        trashOffsets.forEach { offset ->
-            Canvas(
-                modifier = Modifier
-                    .size(30.dp)
-                    .graphicsLayer {
-                        translationY = offset.value
-                    }
-                    .align(Alignment.Center)
-            ) {
-                drawCircle(color = Color.Gray)
-            }
-        }
-    }
-}
-
-@Composable
 fun DynamicFloatingTrashAnimation() {
     val floatingShapes = List(5) {
         remember {
@@ -238,7 +243,7 @@ fun DynamicFloatingTrashAnimation() {
                     }
                     launch {
                         shape.offsetX.animateTo(
-                            targetValue = (shape.offsetX.value + (-30..30).random()).toFloat(),
+                            targetValue = (shape.offsetX.value + (-30..30).random()),
                             animationSpec = spring(
                                 dampingRatio = Spring.DampingRatioLowBouncy,
                                 stiffness = Spring.StiffnessLow

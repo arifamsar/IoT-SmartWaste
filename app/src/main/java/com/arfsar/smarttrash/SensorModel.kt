@@ -1,7 +1,6 @@
 package com.arfsar.smarttrash
 
 import com.google.firebase.database.PropertyName
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
