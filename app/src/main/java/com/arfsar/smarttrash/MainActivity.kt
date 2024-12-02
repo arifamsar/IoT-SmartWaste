@@ -352,24 +352,12 @@ fun TrashBinDemo(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                if (nh3 >= 25) {
-                    Text(
-                        text = "Warning: Nilai NH3 tinggi! berkisar: $nh3 ppm. Segera bersihkan tong sampah Anda",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Red
-                    )
-                } else if (nh3 < 25) {
-                    Text(
-                        text = "Peringatan: Nilai NH3 sedang tinggi, berkisar: $nh3 ppm",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Yellow
-                    )
-                } else {
-                    Text(
-                        text = "NH3: $nh3 ppm",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
+                Text(
+                    text = if (nh3 >= 25) "Peringatan: Nilai NH3 sedang tinggi, berkisar: $nh3 ppm" else if (nh3 >= 13) "Peringatan: Nilai NH3 sedang tinggi, berkisar: $nh3 ppm" else "NH3: $nh3 ppm",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (nh3 >= 25) Color.Red else if (nh3 >= 13) Color.Yellow else MaterialTheme.colorScheme.onSurface
+                )
+
                 if (acetone > 5) {
                     Text(
                         text = "Warning: Acetone level is high!",
